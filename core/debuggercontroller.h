@@ -242,6 +242,16 @@ namespace BinaryNinjaDebugger {
 		std::string GetBreakpointCondition(uint64_t address);
 		std::string GetBreakpointCondition(const ModuleNameAndOffset& address);
 
+		// Breakpoint callbacks - Python code to execute when breakpoint is hit
+		// TODO: Support callable callbacks (not just string code) for better Python ergonomics
+		bool SetBreakpointCallback(uint64_t address, const std::string& callback);
+		bool SetBreakpointCallback(const ModuleNameAndOffset& address, const std::string& callback);
+		std::string GetBreakpointCallback(uint64_t address);
+		std::string GetBreakpointCallback(const ModuleNameAndOffset& address);
+		// Execute the callback for a breakpoint (always stops after callback)
+		void ExecuteBreakpointCallback(uint64_t address);
+		void ExecuteBreakpointCallback(const ModuleNameAndOffset& address);
+
 		// hardware breakpoints
 		// Hardware breakpoint methods - absolute address
 		bool AddHardwareBreakpoint(uint64_t address, DebugBreakpointType type, size_t size);

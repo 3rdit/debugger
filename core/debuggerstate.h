@@ -83,6 +83,7 @@ namespace BinaryNinjaDebugger {
 		ModuleNameAndOffset location;
 		bool enabled = true;
 		std::string condition;
+		std::string callback;          // Python code to execute when breakpoint is hit
 
 		uint64_t address = 0;          // Absolute address (for absolute addressing or resolved relative)
 		DebugBreakpointType type = SoftwareBreakpoint;  // Breakpoint type (Software, HardwareExecute, etc.)
@@ -125,6 +126,14 @@ namespace BinaryNinjaDebugger {
 		std::string GetConditionOffset(const ModuleNameAndOffset& address);
 		bool HasConditionAbsolute(uint64_t address);
 		bool HasConditionOffset(const ModuleNameAndOffset& address);
+
+		// Callback methods - Python code to execute when breakpoint is hit
+		bool SetCallbackAbsolute(uint64_t remoteAddress, const std::string& callback);
+		bool SetCallbackOffset(const ModuleNameAndOffset& address, const std::string& callback);
+		std::string GetCallbackAbsolute(uint64_t address);
+		std::string GetCallbackOffset(const ModuleNameAndOffset& address);
+		bool HasCallbackAbsolute(uint64_t address);
+		bool HasCallbackOffset(const ModuleNameAndOffset& address);
 
 		// Hardware breakpoint methods
 		bool AddHardwareBreakpoint(uint64_t address, DebugBreakpointType type, size_t size);

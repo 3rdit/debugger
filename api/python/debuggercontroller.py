@@ -2331,6 +2331,53 @@ class DebuggerController:
 
         return result if result else ""
 
+    # TODO: Support callable/function callbacks in addition to string code.
+    #       Callable approach is more Pythonic (closures, IDE support, no string escaping).
+    #       String approach kept for persistence (serializes to metadata).
+    #       Signature: set_breakpoint_callback(addr, func) where func(dbg) -> None
+    def set_breakpoint_callback(self, address, callback: str) -> bool:
+        """
+        Set a Python callback for a breakpoint.
+
+        The callback is Python code that will be executed when the breakpoint is hit.
+        The code runs in a scripting context with access to ``bv`` (the current BinaryView).
+
+        To access the debugger controller and registers in your callback::
+
+            import debugger
+            dbg = debugger.DebuggerController.get_controller(bv)
+            rax = dbg.get_register_value('rax')
+            print(f'RAX = {rax:#x}')
+
+        Pass an empty string to clear the callback.
+
+        :param address: the address of the breakpoint (int or ModuleNameAndOffset)
+        :param callback: the Python code to execute, or empty string to clear
+        :return: True if successful, False otherwise
+        """
+        if isinstance(address, int):
+            return dbgcore.BNDebuggerSetBreakpointCallbackAbsolute(self.handle, address, callback)
+        elif isinstance(address, ModuleNameAndOffset):
+            return dbgcore.BNDebuggerSetBreakpointCallbackRelative(self.handle, address.module, address.offset, callback)
+        else:
+            raise NotImplementedError
+
+    def get_breakpoint_callback(self, address) -> str:
+        """
+        Get the callback for a breakpoint
+
+        :param address: the address of the breakpoint (int or ModuleNameAndOffset)
+        :return: the callback Python code, or empty string if no callback
+        """
+        if isinstance(address, int):
+            result = dbgcore.BNDebuggerGetBreakpointCallbackAbsolute(self.handle, address)
+        elif isinstance(address, ModuleNameAndOffset):
+            result = dbgcore.BNDebuggerGetBreakpointCallbackRelative(self.handle, address.module, address.offset)
+        else:
+            raise NotImplementedError
+
+        return result if result else ""
+
     @property
     def ip(self) -> int:
         """

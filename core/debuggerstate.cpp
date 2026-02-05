@@ -766,6 +766,61 @@ bool DebuggerBreakpoints::HasConditionOffset(const ModuleNameAndOffset& address)
 }
 
 
+bool DebuggerBreakpoints::SetCallbackAbsolute(const uint64_t remoteAddress, const std::string& callback)
+{
+	const ModuleNameAndOffset info = m_state->GetModules()->AbsoluteAddressToRelative(remoteAddress);
+	return SetCallbackOffset(info, callback);
+}
+
+
+bool DebuggerBreakpoints::SetCallbackOffset(const ModuleNameAndOffset& address, const std::string& callback)
+{
+	auto it = FindBreakpoint(address);
+	if (it == m_breakpoints.end())
+		return false;
+
+	it->callback = callback;
+	SerializeMetadata();
+	return true;
+}
+
+
+std::string DebuggerBreakpoints::GetCallbackAbsolute(const uint64_t address)
+{
+	for (const auto& bp : m_breakpoints)
+	{
+		if (m_state->GetModules()->RelativeAddressToAbsolute(bp.location) == address)
+			return bp.callback;
+	}
+	return "";
+}
+
+
+std::string DebuggerBreakpoints::GetCallbackOffset(const ModuleNameAndOffset& address)
+{
+	auto it = FindBreakpoint(address);
+	return it != m_breakpoints.end() ? it->callback : "";
+}
+
+
+bool DebuggerBreakpoints::HasCallbackAbsolute(const uint64_t address)
+{
+	for (const auto& bp : m_breakpoints)
+	{
+		if (m_state->GetModules()->RelativeAddressToAbsolute(bp.location) == address)
+			return !bp.callback.empty();
+	}
+	return false;
+}
+
+
+bool DebuggerBreakpoints::HasCallbackOffset(const ModuleNameAndOffset& address)
+{
+	auto it = FindBreakpoint(address);
+	return it != m_breakpoints.end() && !it->callback.empty();
+}
+
+
 bool DebuggerBreakpoints::AddHardwareBreakpoint(uint64_t address, DebugBreakpointType type, size_t size)
 {
 	// TODO: ARCHITECTURAL ISSUE - This dual-path breakpoint system is problematic:
@@ -1070,6 +1125,9 @@ void DebuggerBreakpoints::SerializeMetadata()
 		if (!bp.condition.empty())
 			info["condition"] = new Metadata(bp.condition);
 
+		if (!bp.callback.empty())
+			info["callback"] = new Metadata(bp.callback);
+
 		breakpoints.push_back(new Metadata(info));
 	}
 	m_state->GetController()->GetData()->StoreMetadata("debugger.breakpoints", new Metadata(breakpoints));
@@ -1101,6 +1159,7 @@ void DebuggerBreakpoints::UnserializedMetadata()
 		bp.location.offset = info["offset"]->GetUnsignedInteger();
 		bp.enabled = (info["enabled"] && info["enabled"]->IsBoolean()) ? info["enabled"]->GetBoolean() : true;
 		bp.condition = (info["condition"] && info["condition"]->IsString()) ? info["condition"]->GetString() : "";
+		bp.callback = (info["callback"] && info["callback"]->IsString()) ? info["callback"]->GetString() : "";
 
 		m_breakpoints.push_back(bp);
 	}

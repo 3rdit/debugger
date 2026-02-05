@@ -766,6 +766,12 @@ namespace BinaryNinjaDebuggerAPI {
 		std::string GetBreakpointCondition(uint64_t address);
 		std::string GetBreakpointCondition(const ModuleNameAndOffset& address);
 
+		// Breakpoint callbacks - Python code to execute when breakpoint is hit
+		bool SetBreakpointCallback(uint64_t address, const std::string& callback);
+		bool SetBreakpointCallback(const ModuleNameAndOffset& address, const std::string& callback);
+		std::string GetBreakpointCallback(uint64_t address);
+		std::string GetBreakpointCallback(const ModuleNameAndOffset& address);
+
 		// Hardware breakpoint and watchpoint support - absolute address
 		bool AddHardwareBreakpoint(uint64_t address, DebugBreakpointType type, size_t size = 1);
 		bool RemoveHardwareBreakpoint(uint64_t address, DebugBreakpointType type, size_t size = 1);

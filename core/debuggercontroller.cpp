@@ -260,6 +260,80 @@ std::string DebuggerController::GetBreakpointCondition(const ModuleNameAndOffset
 }
 
 
+bool DebuggerController::SetBreakpointCallback(uint64_t address, const std::string& callback)
+{
+	bool result = m_state->GetBreakpoints()->SetCallbackAbsolute(address, callback);
+	if (result)
+	{
+		DebuggerEvent event;
+		event.type = BreakpointChangedEvent;
+		event.data.absoluteAddress = address;
+		PostDebuggerEvent(event);
+	}
+	return result;
+}
+
+
+bool DebuggerController::SetBreakpointCallback(const ModuleNameAndOffset& address, const std::string& callback)
+{
+	bool result = m_state->GetBreakpoints()->SetCallbackOffset(address, callback);
+	if (result)
+	{
+		DebuggerEvent event;
+		event.type = BreakpointChangedEvent;
+		event.data.relativeAddress = address;
+		PostDebuggerEvent(event);
+	}
+	return result;
+}
+
+
+std::string DebuggerController::GetBreakpointCallback(uint64_t address)
+{
+	return m_state->GetBreakpoints()->GetCallbackAbsolute(address);
+}
+
+
+std::string DebuggerController::GetBreakpointCallback(const ModuleNameAndOffset& address)
+{
+	return m_state->GetBreakpoints()->GetCallbackOffset(address);
+}
+
+
+void DebuggerController::ExecuteBreakpointCallback(uint64_t address)
+{
+	const std::string callback = m_state->GetBreakpoints()->GetCallbackAbsolute(address);
+	if (callback.empty())
+		return;
+
+	// Get Python scripting provider
+	Ref<ScriptingProvider> python = ScriptingProvider::GetByName("Python");
+	if (!python)
+	{
+		LogWarn("Python scripting provider not available for breakpoint callback");
+		return;
+	}
+
+	// Create scripting instance and set context
+	Ref<ScriptingInstance> instance = python->CreateNewInstance();
+	instance->SetCurrentBinaryView(GetData());
+
+	// Execute the callback - it has access to 'bv' via the scripting instance
+	auto result = instance->ExecuteScriptInput(callback);
+	if (result != SuccessfulScriptExecution)
+	{
+		LogWarn("Failed to execute breakpoint callback at 0x%" PRIx64, address);
+	}
+}
+
+
+void DebuggerController::ExecuteBreakpointCallback(const ModuleNameAndOffset& address)
+{
+	uint64_t absoluteAddress = m_state->GetModules()->RelativeAddressToAbsolute(address);
+	ExecuteBreakpointCallback(absoluteAddress);
+}
+
+
 bool DebuggerController::SetIP(uint64_t address)
 {
 	std::string ipRegisterName;
@@ -2063,15 +2137,20 @@ void DebuggerController::DebuggerMainThread()
 			if (uint64_t ip = m_state->IP();
 				!isStepOperation && m_state->GetBreakpoints()->ContainsAbsolute(ip))
 			{
+				// Evaluate condition first
 				if (!EvaluateBreakpointCondition(ip))
 				{
 					m_lastAdapterStopEventConsumed = true;
 					current->done.set_value();
 					// using m_adapter->Go() directly instead of Go() to avoid mutex deadlock
-					// since we're already inside ExecuteAdapterAndWait's event processing
+					// since we are already inside ExecuteAdapterAndWait event processing
 					m_adapter->Go();
 					continue;
 				}
+
+				// Condition passed (or no condition) - execute callback
+				// TODO: Support callback return value to control execution (tracing mode)
+				ExecuteBreakpointCallback(ip);
 			}
 		}
 

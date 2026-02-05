@@ -833,6 +833,36 @@ std::string DebuggerController::GetBreakpointCondition(const ModuleNameAndOffset
 }
 
 
+bool DebuggerController::SetBreakpointCallback(uint64_t address, const std::string& callback)
+{
+	return BNDebuggerSetBreakpointCallbackAbsolute(m_object, address, callback.c_str());
+}
+
+
+bool DebuggerController::SetBreakpointCallback(const ModuleNameAndOffset& address, const std::string& callback)
+{
+	return BNDebuggerSetBreakpointCallbackRelative(m_object, address.module.c_str(), address.offset, callback.c_str());
+}
+
+
+std::string DebuggerController::GetBreakpointCallback(uint64_t address)
+{
+	char* callback = BNDebuggerGetBreakpointCallbackAbsolute(m_object, address);
+	std::string result = callback ? callback : "";
+	BNDebuggerFreeString(callback);
+	return result;
+}
+
+
+std::string DebuggerController::GetBreakpointCallback(const ModuleNameAndOffset& address)
+{
+	char* callback = BNDebuggerGetBreakpointCallbackRelative(m_object, address.module.c_str(), address.offset);
+	std::string result = callback ? callback : "";
+	BNDebuggerFreeString(callback);
+	return result;
+}
+
+
 bool DebuggerController::AddHardwareBreakpoint(uint64_t address, DebugBreakpointType type, size_t size)
 {
 	return BNDebuggerAddHardwareBreakpoint(m_object, address, (BNDebugBreakpointType)type, size);

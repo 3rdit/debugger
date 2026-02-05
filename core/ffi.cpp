@@ -1005,6 +1005,30 @@ char* BNDebuggerGetBreakpointConditionRelative(BNDebuggerController* controller,
 }
 
 
+bool BNDebuggerSetBreakpointCallbackAbsolute(BNDebuggerController* controller, uint64_t address, const char* callback)
+{
+	return controller->object->SetBreakpointCallback(address, callback ? callback : "");
+}
+
+
+bool BNDebuggerSetBreakpointCallbackRelative(BNDebuggerController* controller, const char* module, uint64_t offset, const char* callback)
+{
+	return controller->object->SetBreakpointCallback(ModuleNameAndOffset(module, offset), callback ? callback : "");
+}
+
+
+char* BNDebuggerGetBreakpointCallbackAbsolute(BNDebuggerController* controller, uint64_t address)
+{
+	return BNDebuggerAllocString(controller->object->GetBreakpointCallback(address).c_str());
+}
+
+
+char* BNDebuggerGetBreakpointCallbackRelative(BNDebuggerController* controller, const char* module, uint64_t offset)
+{
+	return BNDebuggerAllocString(controller->object->GetBreakpointCallback(ModuleNameAndOffset(module, offset)).c_str());
+}
+
+
 uint64_t BNDebuggerRelativeAddressToAbsolute(BNDebuggerController* controller, const char* module, uint64_t offset)
 {
 	DebuggerState* state = controller->object->GetState();

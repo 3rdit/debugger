@@ -627,6 +627,16 @@ extern "C"
 	DEBUGGER_FFI_API char* BNDebuggerGetBreakpointConditionRelative(
 		BNDebuggerController* controller, const char* module, uint64_t offset);
 
+	// Breakpoint callback support - Python code to execute when breakpoint is hit
+	DEBUGGER_FFI_API bool BNDebuggerSetBreakpointCallbackAbsolute(
+		BNDebuggerController* controller, uint64_t address, const char* callback);
+	DEBUGGER_FFI_API bool BNDebuggerSetBreakpointCallbackRelative(
+		BNDebuggerController* controller, const char* module, uint64_t offset, const char* callback);
+	DEBUGGER_FFI_API char* BNDebuggerGetBreakpointCallbackAbsolute(
+		BNDebuggerController* controller, uint64_t address);
+	DEBUGGER_FFI_API char* BNDebuggerGetBreakpointCallbackRelative(
+		BNDebuggerController* controller, const char* module, uint64_t offset);
+
 	// Hardware breakpoint and watchpoint support
 	DEBUGGER_FFI_API bool BNDebuggerAddHardwareBreakpoint(BNDebuggerController* controller, uint64_t address,
 		BNDebugBreakpointType type, size_t size);
